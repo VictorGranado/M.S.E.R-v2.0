@@ -12,7 +12,6 @@ LiquidCrystal_I2C lcd(0x27, 20, 4);
 
 // Button
 const int buttonPin = 0;
-volatile bool buttonPressed = false;
 int menuIndex = 0;
 unsigned long lastPressTime = 0;
 const unsigned long debounceDelay = 200;
@@ -82,16 +81,10 @@ String classifyLightLevel(float lux) {
   return "Sunlight";
 }
 
-// --- ISR ---
-void IRAM_ATTR handleButtonPress() {
-  buttonPressed = true;
-}
-
 // --- Setup ---
 void setup() {
   lcd.init(); lcd.backlight();
   pinMode(buttonPin, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(buttonPin), handleButtonPress, FALLING);
 
   lcd.setCursor(4, 0); lcd.print("Hello user");
   lcd.setCursor(4, 1); lcd.print("Welcome to");
@@ -202,11 +195,16 @@ void showMenu4() {
 
 // --- Main Loop ---
 void loop() {
-  if (buttonPressed && (millis() - lastPressTime > debounceDelay)) {
-    buttonPressed = false;
+  static bool lastButtonState = HIGH;
+  bool currentState = digitalRead(buttonPin);
+
+  if (lastButtonState == HIGH && currentState == LOW && millis() - lastPressTime > debounceDelay) {
     lastPressTime = millis();
     menuIndex = (menuIndex + 1) % 5;
     showMenu(menuIndex);
   }
-  delay(50);
+
+  lastButtonState = currentState;
+  delay(10);
 }
+
