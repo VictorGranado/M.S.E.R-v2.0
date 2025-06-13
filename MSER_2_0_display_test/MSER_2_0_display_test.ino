@@ -5,23 +5,19 @@
 LiquidCrystal_I2C lcd(0x27, 20, 4);
 
 // Button configuration
-const int buttonPin = 0;  // Change to any available GPIO
-
-volatile bool buttonPressed = false;
+const int buttonPin = 2;
 int menuIndex = 0;
 unsigned long lastPressTime = 0;
-const unsigned long debounceDelay = 200;  // milliseconds
+const unsigned long debounceDelay = 200;
 
 // ========== SENSOR MOCK FUNCTIONS ==========
-
 float getTemperature() { return 24.7; }
 float getHumidity() { return 55.0; }
 float getPressure() { return 1012.0; }
 float getAltitude() { return 150.0; }
 
 float calculateDewPoint(float temp, float hum) {
-  double a = 17.27;
-  double b = 237.7;
+  double a = 17.27, b = 237.7;
   double alpha = ((a * temp) / (b + temp)) + log(hum / 100.0);
   return (b * alpha) / (a - alpha);
 }
@@ -68,45 +64,24 @@ String getSoundLevelClassification(int dB) {
   return "Loud";
 }
 
-// ========== ISR for Button ==========
-
-void IRAM_ATTR handleButtonPress() {
-  buttonPressed = true;
-}
-
 // ========== SETUP ==========
-
 void setup() {
   Serial.begin(115200);
-  lcd.init();
-  lcd.backlight();
-
+  lcd.init(); lcd.backlight();
   pinMode(buttonPin, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(buttonPin), handleButtonPress, FALLING);
 
-  lcd.clear();
-  lcd.setCursor(4, 0);  // Line 0: "Hello user"
-  lcd.print("Hello user");
-  
-  lcd.setCursor(4, 1);  // Line 1: "Welcome to"
-  lcd.print("Welcome to");
-  
-  lcd.setCursor(3, 2);  // Line 2: "M.S.E.R v2.0"
-  lcd.print("M.S.E.R v2.0");
-  
-  delay(3000);  // Hold message for 3 seconds
-  lcd.clear();
+  lcd.setCursor(4, 0); lcd.print("Hello user");
+  lcd.setCursor(4, 1); lcd.print("Welcome to");
+  lcd.setCursor(3, 2); lcd.print("M.S.E.R v2.0");
+  delay(3000); lcd.clear();
 
-  lcd.setCursor(2, 3);  // Optional: leave blank or add message
-  lcd.print("Initializing...");
-  
-  delay(3000);  // Hold message for 3 seconds
-  lcd.clear();
+  lcd.setCursor(2, 3); lcd.print("Initializing...");
+  delay(3000); lcd.clear();
+
   showMenu(menuIndex);
 }
 
 // ========== MENU FUNCTIONS ==========
-
 void showMenu(int index) {
   lcd.clear();
   switch (index) {
@@ -148,18 +123,10 @@ void showMenu0() {
 void showMenu1() {
   int co2 = getCO2PPM();
   String quality = getAQILevel(co2);
-
-  lcd.setCursor(0, 0);
-  lcd.print("Air Conditions");
-  lcd.setCursor(0, 1);
-  lcd.print("Quality: ");
-  lcd.print(quality);
-  lcd.setCursor(0, 2);
-  lcd.print("CO2: ");
-  lcd.print(co2);
-  lcd.print(" PPM");
-  lcd.setCursor(0, 3);
-  lcd.print("Warning: None");
+  lcd.setCursor(0, 0); lcd.print("Air Conditions");
+  lcd.setCursor(0, 1); lcd.print("Quality: "); lcd.print(quality);
+  lcd.setCursor(0, 2); lcd.print("CO2: "); lcd.print(co2); lcd.print(" PPM");
+  lcd.setCursor(0, 3); lcd.print("Warning: None");
 }
 
 void showMenu2() {
@@ -171,25 +138,10 @@ void showMenu2() {
   String compass = getCompassDirection(head);
   float diffTemp = irTemp - ambient;
 
-  lcd.setCursor(0, 0);
-  lcd.print("Localized Data");
-  lcd.setCursor(0, 1);
-  lcd.print("Head:");
-  lcd.print(head);
-  lcd.print((char)223); lcd.print("(");
-  lcd.print(compass); lcd.print(")");
-  lcd.setCursor(0, 2);
-  lcd.print("Mag:");
-  lcd.print(mag, 0);
-  lcd.print("uT L:");
-  lcd.print(light, 0);
-  lcd.print("lx");
-  lcd.setCursor(0, 3);
-  lcd.print("FocT:");
-  lcd.print(irTemp, 1);
-  lcd.print("C D:");
-  lcd.print(diffTemp, 1);
-  lcd.print("C");
+  lcd.setCursor(0, 0); lcd.print("Localized Data");
+  lcd.setCursor(0, 1); lcd.print("Head:"); lcd.print(head); lcd.print((char)223); lcd.print("("); lcd.print(compass); lcd.print(")");
+  lcd.setCursor(0, 2); lcd.print("Mag:"); lcd.print(mag, 0); lcd.print("uT L:"); lcd.print(light, 0); lcd.print("lx");
+  lcd.setCursor(0, 3); lcd.print("FocT:"); lcd.print(irTemp, 1); lcd.print("C D:"); lcd.print(diffTemp, 1); lcd.print("C");
 }
 
 void showMenu3() {
@@ -199,48 +151,32 @@ void showMenu3() {
   int peak = getPeakSoundLevel();
   String levelClass = getSoundLevelClassification(level);
 
-  lcd.setCursor(0, 0);
-  lcd.print("Sound Analysis");
-  lcd.setCursor(0, 1);
-  lcd.print("Lvl:");
-  lcd.print(level);
-  lcd.print("dB(");
-  lcd.print(levelClass);
-  lcd.print(")");
-  lcd.setCursor(0, 2);
-  lcd.print("Freq:");
-  lcd.print(freq);
-  lcd.print("Hz");
-  lcd.setCursor(0, 3);
-  lcd.print("Avg:");
-  lcd.print(avg);
-  lcd.print(" Pk:");
-  lcd.print(peak);
+  lcd.setCursor(0, 0); lcd.print("Sound Analysis");
+  lcd.setCursor(0, 1); lcd.print("Lvl:"); lcd.print(level); lcd.print("dB("); lcd.print(levelClass); lcd.print(")");
+  lcd.setCursor(0, 2); lcd.print("Freq:"); lcd.print(freq); lcd.print("Hz");
+  lcd.setCursor(0, 3); lcd.print("Avg:"); lcd.print(avg); lcd.print(" Pk:"); lcd.print(peak);
 }
 
 void showMenu4() {
-  lcd.setCursor(0, 0);
-  lcd.print("Data Guidelines");
-  lcd.setCursor(0, 1);
-  lcd.print("Air:<400PPM Good");
-  lcd.setCursor(0, 2);
-  lcd.print("Temp:20-25 RH:30-60%");
-  lcd.setCursor(0, 3);
-  lcd.print("Sound:<70dB Light:300lx");
+  lcd.setCursor(0, 0); lcd.print("Data Guidelines");
+  lcd.setCursor(0, 1); lcd.print("Air:<400PPM Good");
+  lcd.setCursor(0, 2); lcd.print("Temp:20-25 RH:30-60%");
+  lcd.setCursor(0, 3); lcd.print("Sound:<70dB Light:300lx");
 }
 
-// ========== MAIN LOOP ==========
-
+// ========== LOOP ==========
 void loop() {
-  if (buttonPressed && (millis() - lastPressTime > debounceDelay)) {
-    buttonPressed = false;
-    lastPressTime = millis();
+  static bool lastButtonState = HIGH;
+  bool currentState = digitalRead(buttonPin);
 
+  if (lastButtonState == HIGH && currentState == LOW && millis() - lastPressTime > debounceDelay) {
+    lastPressTime = millis();
     menuIndex = (menuIndex + 1) % 5;
     showMenu(menuIndex);
   }
 
-  // Optional: slow update rate or future features
-  delay(50);
+  lastButtonState = currentState;
+  delay(10);
 }
+
 
