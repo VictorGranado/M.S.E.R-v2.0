@@ -11,7 +11,8 @@
 LiquidCrystal_I2C lcd(0x27, 20, 4);
 
 // Button
-const int buttonPin = 0;
+const int buttonPin = 2;
+volatile bool buttonPressed = false;
 int menuIndex = 0;
 unsigned long lastPressTime = 0;
 const unsigned long debounceDelay = 200;
@@ -81,10 +82,16 @@ String classifyLightLevel(float lux) {
   return "Sunlight";
 }
 
+// --- ISR ---
+void IRAM_ATTR handleButtonPress() {
+  buttonPressed = true;
+}
+
 // --- Setup ---
 void setup() {
   lcd.init(); lcd.backlight();
   pinMode(buttonPin, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(buttonPin), handleButtonPress, FALLING);
 
   lcd.setCursor(4, 0); lcd.print("Hello user");
   lcd.setCursor(4, 1); lcd.print("Welcome to");
@@ -124,7 +131,7 @@ void showMenu0() {
   float alt = bme.readAltitude(1013.25);
   float dew = calculateDewPoint(temp, hum);
   float feels = calculateFeelsLike(temp, hum);
-  lcd.setCursor(0,0); lcd.print("Ambi Temp/Hum/Press");
+  lcd.setCursor(0,0); lcd.print("Ambient Conditions");
   lcd.setCursor(0,1); lcd.print("Temp:"); lcd.print(temp,1); lcd.print(" Dew:"); lcd.print(dew,1);
   lcd.setCursor(0,2); lcd.print("Hum:"); lcd.print(hum,0); lcd.print("% Feel:"); lcd.print(feels,1);
   lcd.setCursor(0,3); lcd.print("Press:"); lcd.print(press,0); lcd.print(" Alt:"); lcd.print(alt,0);
@@ -187,7 +194,7 @@ void showMenu3() {
 }
 
 void showMenu4() {
-  lcd.setCursor(0,0); lcd.print("Data Guidelines");
+  lcd.setCursor(0,0); lcd.print("Data Info");
   lcd.setCursor(0,1); lcd.print("Air:<400PPM Good");
   lcd.setCursor(0,2); lcd.print("Temp:20-25 RH:30-60%");
   lcd.setCursor(0,3); lcd.print("Sound:<70dB Light:300lx");
@@ -195,16 +202,12 @@ void showMenu4() {
 
 // --- Main Loop ---
 void loop() {
-  static bool lastButtonState = HIGH;
-  bool currentState = digitalRead(buttonPin);
-
-  if (lastButtonState == HIGH && currentState == LOW && millis() - lastPressTime > debounceDelay) {
+  if (buttonPressed && (millis() - lastPressTime > debounceDelay)) {
+    buttonPressed = false;
     lastPressTime = millis();
     menuIndex = (menuIndex + 1) % 5;
-    showMenu(menuIndex);
   }
-
-  lastButtonState = currentState;
-  delay(10);
+  showMenu(menuIndex);
+  delay(1000);
 }
 
