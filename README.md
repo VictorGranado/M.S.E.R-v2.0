@@ -67,7 +67,7 @@ The Multi-Sensor Environmental Reader (MSER) v2.0 is a significant upgrade from 
 
 * All I2C devices (BME280, BH1750, MLX90614, LCD, QMC5883L) connect to common SDA/SCL lines.
 * Analog sensors (MQ135, Microphone) connect to separate ADC-capable pins on ESP32 an directly to battery (since they have higher current draw).
-* Geiger Counter module connected in parallel to main circutry to the battery.
+* Geiger Counter module connected in parallel with main circutry to the battery.
 * Button connects to GPIO with a pull-down resistor for interrupt-based navigation.
 
 ### 2. Software Requirements
@@ -93,7 +93,7 @@ The Multi-Sensor Environmental Reader (MSER) v2.0 is a significant upgrade from 
 * **MQ135**: Shows ppm and air quality changes clearly.
 * **Microphone**: Displays reasonable dB levels and reacts to sound.
 * **BMM150**: Reads magnetic field and heading direction, though accuracy is pending calibration.
-* **MLX90614**: Sensor gets hot; not functional at present.
+* **MLX90614**: Displays accurate temperatures.
 * **Geiger Counter**: Verified power-up and baseline detection.
 
 ### Results
