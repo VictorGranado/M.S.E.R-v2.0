@@ -1,4 +1,4 @@
-# M.S.E.R-v2.0  Multi-scanner
+# M.S.E.R-v2.0  or Multi-scanner
 The upgraded version of the M.S.E.R prototype. Hence, v2.0. 
 
 ## Project Overview
