@@ -6,6 +6,7 @@ The upgraded version of the M.S.E.R prototype, hence v2.0.
 The Multi-Sensor Environmental Reader (MSER) v2.0 is a significant upgrade from the original prototype. Now running on the ESP32-WROOM-DA module, the system expands its capabilities with new sensors, modularity, and a dynamic UI. MSER v2.0 measures a broader range of environmental parameters, provides radiation detection, and displays real-time data on a 20x4 I2C LCD with user-controlled menu navigation. The system is ideal for environmental research, smart home integration, and portable monitoring solutions.
 
 ---
+![Alt text](20250610_113427.jpg)
 
 ## Features
 
