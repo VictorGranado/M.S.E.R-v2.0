@@ -48,7 +48,7 @@ The Multi-Sensor Environmental Reader (MSER) v2.0 is a significant upgrade from 
 * **Microcontroller**: ESP32-WROOM-DA
 * **Display**: 20x4 LCD via I2C
 * **Sensors**: BME280, BH1750, MQ135, BMM150, MLX90614, Microphone, Geiger Counter
-* **Power Source**: USB and/or 3.7V Li-ion rechargeable battery with USB-C charge circuit
+* **Power Source**: USB and/or 3.7V Li-ion rechargeable battery with USB-C charge circuit + volatge regulator to provide stable 5V
 
 ### Operating Constraints:
 
@@ -69,6 +69,8 @@ The Multi-Sensor Environmental Reader (MSER) v2.0 is a significant upgrade from 
 * Analog sensors (MQ135, Microphone) connect to separate ADC-capable pins on ESP32 an directly to battery (since they have higher current draw).
 * Geiger Counter module connected in parallel with main circutry to the battery.
 * Button connects to GPIO with a pull-down resistor for interrupt-based navigation.
+* Battery is connected to the recharging circuit, then the master switch.
+* The voltage regulator is connected to the recharging circuit, then a switch for the main circuit and a switch for the geiger counter.
 
 ### 2. Software Requirements
 
@@ -95,6 +97,7 @@ The Multi-Sensor Environmental Reader (MSER) v2.0 is a significant upgrade from 
 * **BMM150**: Reads magnetic field and heading direction, though accuracy is pending calibration.
 * **MLX90614**: Displays accurate temperatures.
 * **Geiger Counter**: Verified power-up and baseline detection.
+* **Battery, recharging circuit and switches**: All components work as intended.
 
 ### Results
 
@@ -120,7 +123,7 @@ The Multi-Sensor Environmental Reader (MSER) v2.0 is a significant upgrade from 
 | BME280                | \$5 - \$8     |
 | BH1750                | \$2 - \$5     |
 | MQ135                 | \$5 - \$10    |
-| QMC5883L              | \$3 - \$7     |
+| QMC5883L              | \$16     |
 | MLX90614              | \$8 - \$15    |
 | Microphone Module     | \$1 - \$3     |
 | Geiger Counter Module | \$45          |
@@ -128,7 +131,7 @@ The Multi-Sensor Environmental Reader (MSER) v2.0 is a significant upgrade from 
 | Button and wiring     | <\$2          |
 | 3.7V Li-ion Battery   | \$5 - \$8     |
 | USB-C Charge Circuit  | \$2 - \$4     |
-| **Total**             | \~\$88 - \$127 |
+| **Total**             | \~\$97 - \$136 |
 
 ---
 
