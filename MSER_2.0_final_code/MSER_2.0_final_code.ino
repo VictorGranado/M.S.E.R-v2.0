@@ -32,6 +32,9 @@ Adafruit_MLX90614 mlx = Adafruit_MLX90614();
 // Microphone
 const int micPin = 35;
 #define SAMPLES 200
+const float V_REF = 3.3f;
+const int ADC_MAX = 4095;
+const float MIC_SENS = 0.00631f;
 int samples[SAMPLES];
 
 // BH1750 Light Sensor
@@ -56,6 +59,12 @@ String classifyAirQuality(int ppm) {
   if (ppm < 1000) return "Moderate";
   if (ppm < 2000) return "Unhealthy";
   return "Dangerous";
+}
+
+String classifyWarning(int ppm){
+  if (ppm < 1000) return "None";
+  if (ppm < 2000) return "Poor ventilation";
+  return "Leave this area!";
 }
 
 String getCardinalDirection(float heading) {
@@ -131,7 +140,7 @@ void showMenu0() {
   float alt = bme.readAltitude(1013.25);
   float dew = calculateDewPoint(temp, hum);
   float feels = calculateFeelsLike(temp, hum);
-  lcd.setCursor(0,0); lcd.print("Ambient Conditions");
+  lcd.setCursor(0,0); lcd.print(" Ambient Conditions");
   lcd.setCursor(0,1); lcd.print("Temp:"); lcd.print(temp,1); lcd.print(" Dew:"); lcd.print(dew,1);
   lcd.setCursor(0,2); lcd.print("Hum:"); lcd.print(hum,0); lcd.print("% Feel:"); lcd.print(feels,1);
   lcd.setCursor(0,3); lcd.print("Press:"); lcd.print(press,0); lcd.print(" Alt:"); lcd.print(alt,0);
@@ -140,11 +149,12 @@ void showMenu0() {
 void showMenu1() {
   int analogVal = analogRead(mq135Pin);
   int ppm = estimatePPM(analogVal);
+  String warning = classifyWarning(ppm);
   String quality = classifyAirQuality(ppm);
-  lcd.setCursor(0,0); lcd.print("Air Conditions");
+  lcd.setCursor(0,0); lcd.print("   Air Conditions");
   lcd.setCursor(0,1); lcd.print("Quality: "); lcd.print(quality);
   lcd.setCursor(0,2); lcd.print("CO2: "); lcd.print(ppm); lcd.print(" PPM");
-  lcd.setCursor(0,3); lcd.print("Warning: None");
+  lcd.setCursor(0,3); lcd.print("Warning: "); lcd.print(warning);
 }
 
 void showMenu2() {
@@ -154,50 +164,68 @@ void showMenu2() {
   float ir = mlx.readObjectTempC();
   float ambient = mlx.readAmbientTempC();
   float lux = lightMeter.readLightLevel();
-  lcd.setCursor(0,0); lcd.print("Localized Data");
+  lcd.setCursor(0,0); lcd.print("   Localized Data");
   lcd.setCursor(0,1); lcd.print("Head:"); lcd.print((int)heading); lcd.print((char)223); lcd.print("("); lcd.print(getCardinalDirection(heading)); lcd.print(")");
-  lcd.setCursor(0,2); lcd.print("Mag:"); lcd.print((int)strength); lcd.print("uT L:"); lcd.print((int)lux); lcd.print("lx");
-  lcd.setCursor(0,3); lcd.print("FocT:"); lcd.print(ir,1); lcd.print(" D:"); lcd.print(ir-ambient,1);
+  lcd.setCursor(0,2); lcd.print("Mag:"); lcd.print((int)strength); lcd.print("uT Lux:"); lcd.print((int)lux); 
+  lcd.setCursor(0,3); lcd.print("FTemp:"); lcd.print(ir,1); lcd.print(" TD:"); lcd.print(ir-ambient,1);
 }
 
 void showMenu3() {
+  const float V_REF = 3.3f;
+  const float MIC_SENS = 0.00631f;  // V/Pa (≈–44 dBV/Pa)
+  const int DELAY_MS = 1;           // ~500 Hz sampling rate
+  int minVal = 4095, maxVal = 0;
+  long sumCounts = 0, sumSqCounts = 0;
   unsigned long startMicros = micros();
+
   for (int i = 0; i < SAMPLES; i++) {
     samples[i] = analogRead(micPin);
-    delayMicroseconds(100);
+    sumCounts += samples[i];
+    sumSqCounts += (long)samples[i] * samples[i];
+    if (samples[i] < minVal) minVal = samples[i];
+    if (samples[i] > maxVal) maxVal = samples[i];
+    delay(DELAY_MS);
   }
+
   unsigned long endMicros = micros();
+  float avg = sumCounts / float(SAMPLES);
+  float meanSq = sumSqCounts / float(SAMPLES);
+  float var = meanSq - avg * avg;
+  float rmsCounts = sqrt(max(0.0f, var));
+  float vrms = rmsCounts * (V_REF / 4095.0);
+  float dB = (vrms > 0) ? 20.0f * log10(vrms / MIC_SENS) : 0.0f;
+  dB = constrain(dB, 0.0f, 120.0f);
 
-  int peak = 0; long sum = 0;
-  for (int i = 0; i < SAMPLES; i++) {
-    if (samples[i] > peak) peak = samples[i];
-    sum += samples[i];
-  }
-  int average = sum / SAMPLES;
-  float voltage = (peak - average) * 3.3 / 4095.0;
-  float dB = voltage > 0 ? 20 * log10(voltage / 0.00631) : 0;
-  dB = constrain(dB, 0, 120);
-
+  // Frequency estimation via zero-crossing
   int crossings = 0;
   for (int i = 1; i < SAMPLES; i++) {
-    if ((samples[i - 1] < average && samples[i] >= average) || (samples[i - 1] > average && samples[i] <= average)) {
+    if ((samples[i - 1] < avg && samples[i] >= avg) ||
+        (samples[i - 1] > avg && samples[i] <= avg)) {
       crossings++;
     }
   }
   float durationSec = (endMicros - startMicros) / 1e6;
-  float freq = (crossings / 2.0) / durationSec;
+  float freq = (crossings / 2.0f) / durationSec;
+  if (freq < 20 || freq > 2000) freq = 0;
 
-  lcd.setCursor(0,0); lcd.print("Sound Analysis");
-  lcd.setCursor(0,1); lcd.print("Lvl:"); lcd.print((int)dB); lcd.print("dB("); lcd.print(classifyDbLevel(dB)); lcd.print(")");
-  lcd.setCursor(0,2); lcd.print("Freq:"); lcd.print((int)freq); lcd.print("Hz");
-  lcd.setCursor(0,3); lcd.print("Avg:"); lcd.print(average); lcd.print(" Pk:"); lcd.print(peak);
+  lcd.setCursor(0,0); lcd.print("   Sound Analysis");
+  lcd.setCursor(0,1); lcd.print("Lvl:");
+  lcd.print((int)dB); lcd.print("dB("); lcd.print(classifyDbLevel(dB)); lcd.print(")");
+
+  lcd.setCursor(0,2); lcd.print("Freq:");
+  lcd.print((int)freq); lcd.print("Hz");
+
+  lcd.setCursor(0,3); lcd.print("Avg:");
+  lcd.print((int)avg); lcd.print(" Pk:");
+  lcd.print(maxVal);
 }
 
+
 void showMenu4() {
-  lcd.setCursor(0,0); lcd.print("Data Info");
+  lcd.setCursor(0,0); lcd.print("   Reference Data");
   lcd.setCursor(0,1); lcd.print("Air:<400PPM Good");
   lcd.setCursor(0,2); lcd.print("Temp:20-25 RH:30-60%");
-  lcd.setCursor(0,3); lcd.print("Sound:<70dB Light:300lx");
+  lcd.setCursor(0,3); lcd.print("Sound:<70dB Lux:300");
 }
 
 // --- Main Loop ---
@@ -210,4 +238,3 @@ void loop() {
   showMenu(menuIndex);
   delay(1000);
 }
-
