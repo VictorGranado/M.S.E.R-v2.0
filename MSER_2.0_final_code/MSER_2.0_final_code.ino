@@ -46,8 +46,12 @@ float calculateDewPoint(float temp, float hum) {
   double alpha = ((a * temp) / (b + temp)) + log(hum / 100.0);
   return (b * alpha) / (a - alpha);
 }
-float calculateFeelsLike(float temp, float hum) {
-  return temp + 0.33 * hum - 4.0;
+float calculateFeelsLike(float T, float RH) {
+  float feelsLike = -8.784695 + 1.61139411*T + 2.338549*RH
+                    - 0.14611605*T*RH - 0.01230809*pow(T,2)
+                    - 0.01642482*pow(RH,2) + 0.00221173*pow(T,2)*RH
+                    + 0.00072546*T*pow(RH,2) - 0.00000358*pow(T,2)*pow(RH,2);
+  return feelsLike;
 }
 
 int estimatePPM(int analogVal) {
@@ -238,3 +242,4 @@ void loop() {
   showMenu(menuIndex);
   delay(1000);
 }
+
