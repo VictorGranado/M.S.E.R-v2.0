@@ -3,7 +3,7 @@ The upgraded version of the M.S.E.R prototype, hence v2.0.
 
 ## Project Overview
 
-The Multi-Sensor Environmental Reader (MSER) v2.0 is a significant upgrade from the original prototype. Now running on the ESP32-WROOM-DA module, the system expands its capabilities with new sensors, modularity, and a dynamic UI. MSER v2.0 measures a broader range of environmental parameters, provides radiation detection, and displays real-time data on a 20x4 I2C LCD with user-controlled menu navigation. The system is ideal for environmental research, smart home integration, and portable monitoring solutions.
+The Multi-Sensor Environmental Reader (MSER) v2.0 is a significant upgrade from the original prototype. Now running on the ESP32-WROOM-DA module, the system expands its capabilities with new sensors, modularity, and a dynamic UI. MSER v2.0 measures a broader range of environmental parameters, provides radiation detection, and displays real-time data on a 20x4 I2C LCD with user-controlled menu navigation. It also offers Bluetooth Low Energy (BLE) for remote dashboards and CSV data logging. The system is ideal for environmental research, smart home integration, and portable monitoring solutions.
 
 ---
 ![Alt text](20250618_141558.jpg)
@@ -19,6 +19,11 @@ The Multi-Sensor Environmental Reader (MSER) v2.0 is a significant upgrade from 
 * **MLX90614**: Measures non-contact infrared (IR) object temperature (I2C). 
 * **Microphone Module**: Measures sound intensity in dB and basic frequency analysis (Analog input).
 * **Geiger Counter Module**: Radiation detection via an Arduino-compatible sensor operating in parallel.
+
+### Connectivity & Logging ###
+
+*Bluetooth Low Energy (BLE): Stream live data to smartphone or PC apps.
+*Data Logging: Timestamped CSV files. 
 
 ### Dynamic User Interface:
 
@@ -99,6 +104,7 @@ The Multi-Sensor Environmental Reader (MSER) v2.0 is a significant upgrade from 
 * **Microphone**: Displays reasonable dB levels and reacts to sound.
 * **BMM150**: Reads magnetic field and heading direction, though accuracy is pending calibration.
 * **MLX90614**: Displays accurate temperatures.
+* **BLE Connectivity**: Paired & streamed data to mobile dashboard
 * **Geiger Counter**: Verified power-up and baseline detection.
 * **Battery, recharging circuit and switches**: All components work as intended.
 
@@ -108,6 +114,7 @@ The Multi-Sensor Environmental Reader (MSER) v2.0 is a significant upgrade from 
 * ADC and I2C data update accurately.
 * Sensor switching via button works as intended.
 * The project is completely functional and works as expected.
+* BLE streaming, and persistent logging functioning as intended.
 
 ---
 
