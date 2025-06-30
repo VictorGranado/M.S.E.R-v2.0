@@ -55,6 +55,7 @@ The Multi-Sensor Environmental Reader (MSER) v2.0 is a significant upgrade from 
 
 * **Microcontroller**: ESP32-WROOM-DA
 * **Display**: 20x4 LCD via I2C
+* **Navigation**: Push-button
 * **Sensors**: BME280, BH1750, MQ135, BMM150, MLX90614, Microphone, Geiger Counter
 * **Power Source**: USB and/or 3.7V Li-ion rechargeable battery with USB-C charge circuit + volatge regulator to provide stable 5V
 
