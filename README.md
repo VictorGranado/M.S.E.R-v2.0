@@ -116,8 +116,9 @@ The Multi-Sensor Environmental Reader (MSER) v2.0 is a significant upgrade from 
 * LCD UI operates reliably.
 * ADC and I2C data update accurately.
 * Sensor switching via button works as intended.
-* The project is completely functional and works as expected.
 * BLE streaming, and persistent logging functioning as intended.
+* The project is completely functional and works as expected.
+
 
 ---
 
