@@ -24,7 +24,7 @@ The Multi-Sensor Environmental Reader (MSER) v2.0 is a significant upgrade from 
 
 *Bluetooth Low Energy (BLE): Stream live data to smartphone or PC apps.
 *Data Logging: Timestamped CSV files. 
-![Alt text](Screenshot_20250629_204857_nRF Connect.jpg)
+![Alt text](Screenshot_20250629_204857_nRF_Connect.jpg)
 
 ### Dynamic User Interface:
 
