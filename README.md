@@ -124,7 +124,6 @@ The Multi-Sensor Environmental Reader (MSER) v2.0 is a significant upgrade from 
 
 ## Future Enhancements
 
-* Add Wi-Fi/Bluetooth integration for remote dashboard.
 * Data logging to SD card.
 * Sensor averaging and filtering for more stable readings.
 
