@@ -1,4 +1,4 @@
-// MSER v2.0 Final Integrated Code
+// MSER v2.0 Final Integrated Code with BLE Export
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
 #include <Adafruit_Sensor.h>
@@ -6,6 +6,10 @@
 #include <DFRobot_BMM150.h>
 #include <Adafruit_MLX90614.h>
 #include <BH1750.h>
+#include <BLEDevice.h>
+#include <BLEServer.h>
+#include <BLEUtils.h>
+#include <BLE2902.h>
 
 // LCD
 LiquidCrystal_I2C lcd(0x27, 20, 4);
@@ -40,6 +44,12 @@ int samples[SAMPLES];
 // BH1750 Light Sensor
 BH1750 lightMeter;
 
+// BLE
+BLECharacteristic *pCharacteristic;
+bool deviceConnected = false;
+unsigned long lastBLETime = 0;
+const unsigned long bleInterval = 3000;  // 3 seconds
+
 // --- Helper Functions ---
 float calculateDewPoint(float temp, float hum) {
   double a = 17.27, b = 237.7;
@@ -64,13 +74,11 @@ String classifyAirQuality(int ppm) {
   if (ppm < 2000) return "Unhealthy";
   return "Dangerous";
 }
-
 String classifyWarning(int ppm){
   if (ppm < 1000) return "None";
   if (ppm < 2000) return "Poor ventilation";
   return "Leave this area!";
 }
-
 String getCardinalDirection(float heading) {
   if (heading < 22.5 || heading >= 337.5) return "N";
   if (heading < 67.5) return "NE";
@@ -81,19 +89,27 @@ String getCardinalDirection(float heading) {
   if (heading < 292.5) return "W";
   return "NW";
 }
-
 String classifyDbLevel(float dB) {
   if (dB < 60) return "Safe";
   if (dB < 85) return "Moderate";
   return "Loud";
 }
-
 String classifyLightLevel(float lux) {
   if (lux < 100) return "Dark";
   if (lux < 300) return "Dim";
   if (lux < 10000) return "Bright";
   return "Sunlight";
 }
+
+// BLE Callbacks
+class MyServerCallbacks : public BLEServerCallbacks {
+  void onConnect(BLEServer* pServer) {
+    deviceConnected = true;
+  }
+  void onDisconnect(BLEServer* pServer) {
+    deviceConnected = false;
+  }
+};
 
 // --- ISR ---
 void IRAM_ATTR handleButtonPress() {
@@ -102,6 +118,7 @@ void IRAM_ATTR handleButtonPress() {
 
 // --- Setup ---
 void setup() {
+  Serial.begin(115200);
   lcd.init(); lcd.backlight();
   pinMode(buttonPin, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(buttonPin), handleButtonPress, FALLING);
@@ -122,7 +139,83 @@ void setup() {
   mlx.begin();
   lightMeter.begin(BH1750::CONTINUOUS_HIGH_RES_MODE);
 
+  // BLE Init
+  BLEDevice::init("MSER_v2");
+  BLEServer *pServer = BLEDevice::createServer();
+  pServer->setCallbacks(new MyServerCallbacks());
+  BLEService *pService = pServer->createService("4fafc201-1fb5-459e-8fcc-c5c9c331914b");
+  pCharacteristic = pService->createCharacteristic(
+                    "beb5483e-36e1-4688-b7f5-ea07361b26a8",
+                    BLECharacteristic::PROPERTY_NOTIFY
+                  );
+  pCharacteristic->addDescriptor(new BLE2902());
+  pService->start();
+  pServer->getAdvertising()->start();
+
   showMenu(menuIndex);
+}
+
+// Format and send BLE data
+String formatSensorData() {
+  float temp = bme.readTemperature();
+  float hum = bme.readHumidity();
+  float press = bme.readPressure() / 100.0F;
+  float alt = bme.readAltitude(1013.25);
+  float dew = calculateDewPoint(temp, hum);
+  float feels = calculateFeelsLike(temp, hum);
+  int analogVal = analogRead(mq135Pin);
+  int ppm = estimatePPM(analogVal);
+  String airQual = classifyAirQuality(ppm);
+  sBmm150MagData_t mag = bmm150.getGeomagneticData();
+  float heading = bmm150.getCompassDegree();
+  float strength = sqrt(pow(mag.x,2) + pow(mag.y,2) + pow(mag.z,2));
+  float ir = mlx.readObjectTempC();
+  float ambient = mlx.readAmbientTempC();
+  float lux = lightMeter.readLightLevel();
+
+  long sum = 0, sumSq = 0;
+  int minVal = 4095, maxVal = 0;
+  for (int i = 0; i < SAMPLES; i++) {
+    samples[i] = analogRead(micPin);
+    sum += samples[i];
+    sumSq += long(samples[i]) * samples[i];
+    minVal = min(minVal, samples[i]);
+    maxVal = max(maxVal, samples[i]);
+  }
+  float avg = sum / float(SAMPLES);
+  float var = (sumSq / float(SAMPLES)) - avg * avg;
+  float rms = sqrt(max(0.0f, var));
+  float vrms = rms * (V_REF / ADC_MAX);
+  float dB = (vrms > 0) ? 20.0f * log10(vrms / MIC_SENS) : 0.0f;
+  dB = constrain(dB, 0.0f, 120.0f);
+
+  int crossings = 0;
+  for (int i = 1; i < SAMPLES; i++) {
+    if ((samples[i - 1] < avg && samples[i] >= avg) ||
+        (samples[i - 1] > avg && samples[i] <= avg)) {
+      crossings++;
+    }
+  }
+  float freq = (crossings / 2.0f) / (SAMPLES * 0.001);
+  if (freq < 20 || freq > 2000) freq = 0;
+
+  String data = "# MSER v2.0 Report\n";
+  data += "Temp: " + String(temp,1) + " C\n";
+  data += "Humidity: " + String(hum,1) + " %\n";
+  data += "Pressure: " + String(press,1) + " hPa\n";
+  data += "Altitude: " + String(alt,1) + " m\n";
+  data += "Feels Like: " + String(feels,1) + " C\n";
+  data += "Dew Point: " + String(dew,1) + " C\n";
+  data += "Air Quality: " + airQual + " (" + String(ppm) + " PPM)\n";
+  data += "Heading: " + String(heading,1) + " deg\n";
+  data += "Mag: " + String(strength,1) + " uT\n";
+  data += "Lux: " + String(lux,1) + " lx\n";
+  data += "IR Temp: " + String(ir,1) + " C\n";
+  data += "dB: " + String(dB,1) + " dB\n";
+  data += "Freq: " + String(freq,1) + " Hz\n";
+  data += "Timestamp: " + String(millis()/1000) + " s\n\n";
+
+  return data;
 }
 
 // --- Menu Display ---
@@ -240,6 +333,12 @@ void loop() {
     menuIndex = (menuIndex + 1) % 5;
   }
   showMenu(menuIndex);
+
+  if (deviceConnected && millis() - lastBLETime >= bleInterval) {
+    String report = formatSensorData();
+    pCharacteristic->setValue(report.c_str());
+    pCharacteristic->notify();
+    lastBLETime = millis();
+  }
   delay(1000);
 }
-
