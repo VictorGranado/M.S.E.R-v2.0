@@ -79,16 +79,28 @@ String classifyWarning(int ppm){
   if (ppm < 2000) return "Poor ventilation";
   return "Leave this area!";
 }
-String getCardinalDirection(float heading) {
-  if (heading < 22.5 || heading >= 337.5) return "N";
-  if (heading < 67.5) return "NE";
-  if (heading < 112.5) return "E";
-  if (heading < 157.5) return "SE";
-  if (heading < 202.5) return "S";
-  if (heading < 247.5) return "SW";
-  if (heading < 292.5) return "W";
-  return "NW";
+
+float getCorrectedHeading() {
+  sBmm150MagData_t mag = bmm150.getGeomagneticData();
+
+  // Sensor mounted with Y facing up
+  float heading = atan2(mag.x, mag.z) * 180.0 / PI;
+  if (heading < 0) heading += 360.0;
+  return heading;
 }
+
+String getCardinalDirection(float heading) {
+  if (heading >= 337.5 || heading < 22.5)   return "N";
+  else if (heading >= 22.5 && heading < 67.5)   return "NE";
+  else if (heading >= 67.5 && heading < 112.5)  return "E";
+  else if (heading >= 112.5 && heading < 157.5) return "SE";
+  else if (heading >= 157.5 && heading < 202.5) return "S";
+  else if (heading >= 202.5 && heading < 247.5) return "SW";
+  else if (heading >= 247.5 && heading < 292.5) return "W";
+  else if (heading >= 292.5 && heading < 337.5) return "NW";
+  return "?"; // fallback
+}
+
 String classifyDbLevel(float dB) {
   if (dB < 60) return "Safe";
   if (dB < 85) return "Moderate";
@@ -256,16 +268,19 @@ void showMenu1() {
 
 void showMenu2() {
   sBmm150MagData_t mag = bmm150.getGeomagneticData();
-  float heading = bmm150.getCompassDegree();
+  float heading = getCorrectedHeading();
   float strength = sqrt(pow(mag.x,2) + pow(mag.y,2) + pow(mag.z,2));
   float ir = mlx.readObjectTempC();
   float ambient = mlx.readAmbientTempC();
   float lux = lightMeter.readLightLevel();
+
   lcd.setCursor(0,0); lcd.print("   Localized Data");
   lcd.setCursor(0,1); lcd.print("Head:"); lcd.print((int)heading); lcd.print((char)223); lcd.print("("); lcd.print(getCardinalDirection(heading)); lcd.print(")");
   lcd.setCursor(0,2); lcd.print("Mag:"); lcd.print((int)strength); lcd.print("uT Lux:"); lcd.print((int)lux); 
   lcd.setCursor(0,3); lcd.print("FTemp:"); lcd.print(ir,1); lcd.print(" TD:"); lcd.print(ir-ambient,1);
 }
+
+
 
 void showMenu3() {
   const float V_REF = 3.3f;
@@ -342,3 +357,4 @@ void loop() {
   }
   delay(1000);
 }
+
