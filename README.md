@@ -58,6 +58,7 @@ The Multi-Sensor Environmental Reader (MSER) v2.0 is a significant upgrade from 
 * **Navigation**: Push-button
 * **Sensors**: BME280, BH1750, MQ135, BMM150, MLX90614, Microphone, Geiger Counter
 * **Power Source**: USB and/or 3.7V Li-ion rechargeable battery with USB-C charge circuit + volatge regulator to provide stable 5V
+![Alt text](https://github.com/VictorGranado/M.S.E.R-v2.0/blob/58c7a9fdfe5889ffb984f11dc66cb02359ee7c8f/WhatsApp%20Image%202026-05-24%20at%2019.28.02%20(4).jpeg)
 
 ![Alt text](20250613_184613.jpg)
 
